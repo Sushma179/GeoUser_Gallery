@@ -30,6 +30,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
   }
 
+  // ignore: non_constant_identifier_names
   Future<void> GetAddressFromLatLong(Position position) async {
     List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
     Placemark place = placemarks[0];
@@ -74,6 +75,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       return Future.error('Location permissions are permanently denied.');
     }
 
+    // ignore: deprecated_member_use
     return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
 
