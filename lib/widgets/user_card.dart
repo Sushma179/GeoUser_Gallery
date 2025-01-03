@@ -1,4 +1,4 @@
-import 'dart:io'; // For using File
+import 'dart:io'; 
 import 'package:flutter/material.dart';
 
 class UserCard extends StatelessWidget {
@@ -17,11 +17,6 @@ class UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return 
-    // Card(
-      // elevation: 6,
-      // margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-      // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      // child:
        ListTile(
         leading: ClipOval(
           child: avatarUrl.startsWith('http') // Check if it's a URL

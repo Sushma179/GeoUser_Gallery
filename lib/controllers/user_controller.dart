@@ -15,8 +15,8 @@ class UserController extends GetxController {
     try {
       List<User> fetchedUsers = await UserService().fetchUsers();
       users.assignAll(fetchedUsers);
+    // ignore: empty_catches
     } catch (e) {
-      print('Error fetching users: $e');
     }
   }
 }

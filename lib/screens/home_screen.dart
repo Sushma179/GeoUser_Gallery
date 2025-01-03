@@ -126,13 +126,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal, // Set the background color of the page
+      backgroundColor: Colors.teal, 
       body: Padding(
         padding:  EdgeInsets.fromLTRB(0,50,0,0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Location display section (Stacked vertically)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Column(
