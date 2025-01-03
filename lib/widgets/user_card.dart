@@ -1,5 +1,5 @@
+import 'dart:io'; // For using File
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 class UserCard extends StatelessWidget {
   final String avatarUrl;
@@ -7,20 +7,49 @@ class UserCard extends StatelessWidget {
   final String email;
   final Function() onUploadImage;
 
-  UserCard({required this.avatarUrl, required this.fullName, required this.email, required this.onUploadImage});
+  UserCard({
+    required this.avatarUrl,
+    required this.fullName,
+    required this.email,
+    required this.onUploadImage,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      elevation: 6,
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(avatarUrl),
+        leading: ClipOval(
+          child: avatarUrl.startsWith('http') // Check if it's a URL
+              ? Image.network(
+                  avatarUrl,
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.person, size: 50, color: Colors.grey),
+                )
+              : Image.file(
+                  File(avatarUrl), // Display local image from file
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.person, size: 50, color: Colors.grey),
+                ),
         ),
-        title: Text(fullName),
-        subtitle: Text(email),
+        title: Text(
+          fullName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          email,
+          style: TextStyle(color: Colors.grey[600]),
+        ),
         trailing: IconButton(
-          icon: Icon(Icons.camera_alt),
+          icon: const Icon(Icons.camera_alt, color: Colors.teal),
           onPressed: onUploadImage,
         ),
       ),
