@@ -7,7 +7,7 @@ class UserCard extends StatelessWidget {
   final String email;
   final Function() onUploadImage;
 
-  UserCard({
+  const UserCard({super.key, 
     required this.avatarUrl,
     required this.fullName,
     required this.email,
@@ -16,11 +16,13 @@ class UserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 6,
-      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
+    return 
+    // Card(
+      // elevation: 6,
+      // margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      // child:
+       ListTile(
         leading: ClipOval(
           child: avatarUrl.startsWith('http') // Check if it's a URL
               ? Image.network(
@@ -32,7 +34,7 @@ class UserCard extends StatelessWidget {
                       Icon(Icons.person, size: 50, color: Colors.grey),
                 )
               : Image.file(
-                  File(avatarUrl), // Display local image from file
+                  File(avatarUrl), 
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
@@ -52,7 +54,7 @@ class UserCard extends StatelessWidget {
           icon: const Icon(Icons.camera_alt, color: Colors.teal),
           onPressed: onUploadImage,
         ),
-      ),
-    );
+      );
+    // );
   }
 }

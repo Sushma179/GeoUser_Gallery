@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:geouser_gallery/controllers/user_controller.dart';
 import 'package:geouser_gallery/widgets/user_card.dart';
-import 'package:geouser_gallery/services/location_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,8 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  String location = "Loading location...";
-  String address = "Loading address...";
+  String location = 'Null, Press Button';
+  String address = 'Searching for address...';
   final UserController userController = Get.put(UserController());
   late AnimationController _animationController;
   late Box<String> imageBox;
@@ -26,26 +26,60 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   void initState() {
     super.initState();
     _initializeHive();
-    _requestPermissions();
+    _getLocationAndAddress();
     _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    _getLocation();
+  }
+
+  Future<void> GetAddressFromLatLong(Position position) async {
+    List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+    Placemark place = placemarks[0];
+    setState(() {
+      address = '${place.street}, ${place.subLocality}, ${place.locality}, ${place.postalCode}, ${place.country}';
+    });
+  }
+
+  Future<void> _getLocationAndAddress() async {
+    try {
+      Position position = await _getGeoLocationPosition();
+      setState(() {
+        location = 'Latitude: ${position.latitude}, Longitude: ${position.longitude}';
+      });
+      await GetAddressFromLatLong(position);
+    } catch (e) {
+      setState(() {
+        location = 'Location not available';
+        address = 'Address not available';
+      });
+    }
+  }
+
+  Future<Position> _getGeoLocationPosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error('Location permissions are denied.');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error('Location permissions are permanently denied.');
+    }
+
+    return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
 
   Future<void> _initializeHive() async {
     await Hive.initFlutter();
     imageBox = await Hive.openBox<String>('user_images');
-  }
-
-  Future<void> _requestPermissions() async {
-    await Future.wait([Permission.locationWhenInUse.request(), Permission.camera.request(), Permission.photos.request()]);
-  }
-
-  Future<void> _getLocation() async {
-    Map<String, String> locationData = await LocationService().getCurrentLocation();
-    setState(() {
-      location = locationData['location'] ?? "Location unavailable";
-      address = locationData['address'] ?? "Address unavailable";
-    });
   }
 
   Future<void> _pickImage(ImageSource source, String userId) async {
@@ -92,57 +126,85 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Geo User Gallery"), backgroundColor: Colors.teal),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const Icon(Icons.location_on, color: Colors.teal),
-                const SizedBox(width: 8),
-                Expanded(child: Text("Current Location: $location", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const Icon(Icons.place, color: Colors.teal),
-                const SizedBox(width: 8),
-                Expanded(child: Text("Address: $address", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Obx(() {
-              return ListView.builder(
-                itemCount: userController.users.length,
-                itemBuilder: (context, index) {
-                  var user = userController.users[index];
-                  String? localImage = imageBox.get(user.id.toString());
-                  _animationController.forward();
-                  return FadeTransition(
-                    opacity: CurvedAnimation(parent: _animationController, curve: const Interval(0, 1, curve: Curves.easeInOut)),
-                    child: SlideTransition(
-                      position: Tween<Offset>(begin: const Offset(0, 1), end: const Offset(0, 0)).animate(CurvedAnimation(
-                        parent: _animationController,
-                        curve: const Interval(0.2, 1, curve: Curves.easeInOut),
-                      )),
-                      child: UserCard(
-                        avatarUrl: localImage ?? user.avatar,
-                        fullName: "${user.firstName} ${user.lastName}",
-                        email: user.email,
-                        onUploadImage: () => _showImageSourceSelection(context, user.id.toString()),
-                      ),
+      backgroundColor: Colors.teal, // Set the background color of the page
+      body: Padding(
+        padding:  EdgeInsets.fromLTRB(0,50,0,0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Location display section (Stacked vertically)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Coordinates',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    location,
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  SizedBox(height: 16), 
+                  Text(
+                    'Address',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    address,
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 50),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(topRight: Radius.circular(70)),
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, spreadRadius: 1)],
+                ),
+                child: Obx(() {
+                  return ListView.builder(
+                    itemCount: userController.users.length,
+                    itemBuilder: (context, index) {
+                      var user = userController.users[index];
+                      String? localImage = imageBox.get(user.id.toString());
+                      _animationController.forward();
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5.0),
+                        child: UserCard(
+                          avatarUrl: localImage ?? user.avatar,
+                          fullName: "${user.firstName} ${user.lastName}",
+                          email: user.email,
+                          onUploadImage: () => _showImageSourceSelection(context, user.id.toString()),
+                        ),
+                      );
+                    },
                   );
-                },
-              );
-            }),
-          ),
-        ],
+                }),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
